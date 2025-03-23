@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  web:
+    image: ghcr.io/hareom284/design-den-prod:web-latest
+    restart: unless-stopped
+    volumes:
+      - laravel-storage-production:/var/www/storage:ro
+    networks:
+      - laravel-production
+    ports:
+      - "${NGINX_PORT:-6001}:80"
+    depends_on:
+      php-fpm:
+        condition: service_healthy
+
+  php-fpm:
+    image: ghcr.io/hareom284/design-den-prod:php-fpm-latest
+    restart: unless-stopped
+    volumes:
+      - laravel-storage-production:/var/www/storage
+    env_file:
+      - .env
+    networks:
+      - laravel-production
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm-healthcheck || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    user: mysql
+    ports:
+      - "${MYSQL_DOCKER_PORT_PROD:-3306}:3306"
+    environment:
+      - MYSQL_DATABASE=${DB_DATABASE:-app}
+      - MYSQL_USER=${DB_USERNAME:-laravel}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-secret}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-rootsecret}
+    volumes:
+      - mysql-data-production:/var/lib/mysql
+    networks:
+      - laravel-production
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-hlocalhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    networks:
+      - laravel-production
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  laravel-production:
+
+volumes:
+  mysql-data-production:
+  laravel-storage-production:
