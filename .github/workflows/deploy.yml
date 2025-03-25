@@ -27,9 +27,7 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u hareom284 --password-stdin
 
             # Pull latest images
-            docker pull ghcr.io/hareom284/design-den-prod:web-latest
             docker pull ghcr.io/hareom284/design-den-prod:php-fpm-latest
-            docker pull ghcr.io/hareom284/design-den-prod:design_den_fe_v2
 
             # Stop and remove existing containers
             docker compose down
